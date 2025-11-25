@@ -8,6 +8,17 @@ Main meribula script using new interface
 import sys, os
 import anuga
 import project_steve as project
+import resource
+import time
+import tracemalloc
+import faulthandler
+tracemalloc.start()
+faulthandler.enable()
+
+def mem():
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # MB
+
+
 
 #-------------------------------
 # Domain
@@ -25,7 +36,7 @@ if anuga.myid == 0:
     print ('Number of triangles = ', len(domain))
     print ('The extent is ', domain.get_extent())
 
-  
+
 
 
     #-------------------------------
@@ -58,11 +69,11 @@ domain = anuga.distribute(domain)
 # Setup domain runtime parameters
 #-------------------------------
 
-domain.store = True    #Store for visualisation purposes
+domain.store = True
 domain.smooth = False
 domain.set_low_froude(1)
 domain.set_flow_algorithm('DE1')
-domain.set_multiprocessor_mode(2)
+domain.set_multiprocessor_mode(1)
 
 
 
@@ -99,7 +110,7 @@ print (domain.statistics())
 #-------------------------------
 # Boundary conditions
 #-------------------------------
-if anuga.myid == 0: 
+if anuga.myid == 0:
     print ('Boundaries')
 
 #----------------------------------------
@@ -138,7 +149,7 @@ min = 60*sec
 hr  = 60*min
 day = 24*hr
 yieldstep = 5*min
-finaltime = 15*min
+finaltime = 1250*min
 
 try:
     tid = domain.get_triangle_containing_point([ 760951.44544767, 5912173.85974667])
@@ -156,7 +167,7 @@ if anuga.myid == 0:
     if num_threads is not None:
         num_threads = int(num_threads)
     else:
-        num_theads = 1     
+        num_theads = 1
     print (' ')
     print ('#',60*'=')
     print ('#','Evolving domain')
@@ -172,12 +183,15 @@ if anuga.myid == 0:
 # Main Evolve Loop
 #===========================================================================
 
+print("Initial memory:", mem(), "MB")
 for t in domain.evolve(yieldstep = yieldstep, finaltime = finaltime):
-        
+
     # This only happens on processor that owns the triangle.
     if tid is not None:
         print (domain.timestepping_statistics(datetime = True))
-        print (f'    Tide {tide_function(t)[0]:.3f}, Mid Boundary Stage {domain.get_quantity("stage").centroid_values[tid]:.3f} ')
+        print (f'    Tide {tide_function(t)[0]:.3f}, Mid Boundary Stage {domain.get_quantity("stage").centroid_values[tid]:.3f} and memory is {mem()}')
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"TRACEMALLOC current={current/1e6:.2f}MB peak={peak/1e6:.2f}MB")
         sys.stdout.flush()
 
 anuga.barrier()
@@ -197,8 +211,7 @@ if anuga.numprocs > 1:
         print ('#','Merging partitioned sww files')
         print ('#',60*'=')
         print (' ')
-        
+
     domain.sww_merge(delete_old=True)
 
     anuga.finalize()
-
