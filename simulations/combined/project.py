@@ -1,8 +1,10 @@
 """Common filenames for Merimbula simulation
 """
 
+import os
+
 #mesh_size = 10785
-#mesh_size = '17156' # currently problem with these meshes 
+#mesh_size = 17156 # currently problem with these meshes 
 mesh_size = 43200
 
 model_date = 'sept_2003'
@@ -12,7 +14,7 @@ weeds = True
 canal = True
 depth_canal = 4
 
-simulation_dir = 'combined'
+simulation_dir = os.path.basename(os.path.abspath(os.path.dirname(__file__)))
 
 sec = 1.0
 min = 60*sec
@@ -25,10 +27,13 @@ duration   = 5*day
 
 
 
+
 #------------------------------------
 # No need to edit below this line
 #------------------------------------
 import anuga
+
+georef = anuga.Geo_reference(zone = 55,  hemisphere = 'southern')
 
 from datetime import datetime
 now = datetime.now() # current date and time
